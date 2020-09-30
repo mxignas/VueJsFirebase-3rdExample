@@ -26,6 +26,28 @@ export default {
                 minZoom: 3,
                 streetViewControl:false
             })
+            // getting users from collection
+            db.collection('users').get().then(users => {
+                // getting inside users and iterating through each of them and taking them as an doc
+                users.docs.forEach(doc => {
+                    let data = doc.data() // data() --- how we get the data stored inside each document
+                    if(data.geolocation) { // if geolocation is not null
+                        let marker = new google.maps.Marker({ // place the marker
+                            position: {
+                                lat: data.geolocation.lat,
+                                lng: data.geolocation.lng
+                            },
+                            // placing the marker on the "map"
+                            map: map // can be just  -- map
+                        })
+                        // add click event to marker
+                        marker.addListener('click', () => {
+                            // taking to the users wall 
+                            this.$router.push({ name: 'ViewProfile', params: { id: doc.id }}) // passing the parameter to go /profile/ doc.id -- which we already had
+                        })
+                    }
+                })
+            })
         }
     },
     
