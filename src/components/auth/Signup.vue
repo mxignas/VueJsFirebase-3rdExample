@@ -26,6 +26,7 @@
 import slugify from 'slugify'
 import db from '@/firebase/init'
 import firebase from 'firebase'
+import functions from 'firebase/functions'
 
 export default {
     name: 'Signup',
@@ -47,20 +48,30 @@ export default {
                     remove: /[$*_+~.()'"!\-:@]/g,
                     lower: true
                 })
-                let ref = db.collection('users').doc(this.slug) // this doc to the users collection
-                // getting the document from collection using parameter "this.slug" taking it as an "doc" and checking if it exists
-                ref.get().then(doc => {
-                    if(doc.exists) {
+
+                // let ref = db.collection('users').doc(this.slug) // this doc to the users collection
+
+                let checkAlias = firebase.functions().httpsCallable('checkAlias')
+                checkAlias({ slug: this.slug }).then(result => { // slug: this.slug. We are getting slug: from function that is in /functions/index.js
+                    console.log(result)
+
+                /* ----------------------- BEFORE FIREBASE FUNCTIONS
+                
+                // })
+                // // getting the document from collection using parameter "this.slug" taking it as an "doc" and checking if it exists
+                // ref.get().then(doc => {
+                        */
+                    if(!result.data.unique) { // if its not unique
                         this.feedback = "This alias already exists"
                     }
                     else {
-                        ref.set({ // setting properties to a record in db.collections('users')
+                        db.collection('users').doc(this.slug).set({ // setting properties to a record in db.collections('users')
                                 alias: this.alias,
                                 geolocation: null
                             }).then(() => { // creating user with email and password in firebase
                                 return firebase.auth().createUserWithEmailAndPassword(this.email, this.password) 
                             }).then(cred => { // getting credentials object back from it
-                                return ref.update({ // updating user_uid with unique uid from firebase
+                                return db.collection('users').doc(this.slug).update({ // updating user_uid with unique uid from firebase
                                     user_id: cred.user.uid
                                 });
                         }).then(() => { // redireccting them into gmap page after creating and storing user
@@ -72,6 +83,7 @@ export default {
                             this.feedback = err.message
                         })
                         this.feedback = "This alias is free to use"
+
                     }
                 })
             } else {

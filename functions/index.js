@@ -1,9 +1,17 @@
 const functions = require('firebase-functions');
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+// firebase admin library
+const admin = require('firebase-admin')
+admin.initializeApp()
+
+exports.checkAlias = functions.https.onCall((data, context) => { // calling that from the front end
+
+    // sending slug property on the data object
+    const ref = admin.firestore().collection('users').doc(data.slug);
+    return ref.get().then(doc => {
+        // if doc exists, it will be true, then it wont be unique
+        return { unique: !doc.exists }
+    }).catch(err => {
+        throw new functions.https.HttpsError('failed to connect')
+    })
+})
